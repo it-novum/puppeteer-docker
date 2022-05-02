@@ -7,9 +7,14 @@
     <script>var requestBody = {}; </script>
 
     <!-- Static dependencies so we do not get any issues in the future -->
-    <script src="./vendor/chart.js-3.7.1/dist/chart.min.js"></script>
-    <script src="./vendor/chartjs-adapter-date-fns.bundle.min.js"""></script>
+
+
+    <!-- For development in local web browser (drag&drop hte html file into it) -->
+    <!--
     <script src="./vendor/moment.js-2.29.3/moment.js"></script>
+    <script src="./vendor/chart.js-3.7.1/dist/chart.min.js"></script>
+    <script src="./vendor/chartjs-adapter-date-fns.bundle.min.js"></script>
+    -->
 </head>
 <body>
 <div id="chart">
@@ -217,6 +222,8 @@
         window.myLine = new Chart(ctx, chartJsOptions);
     };
 
+
+    // This function is for local testing only
     window.onload = function(){
         //Test data for testing in local browser
 

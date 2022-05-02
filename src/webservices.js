@@ -113,6 +113,16 @@
          waitUntil: 'networkidle0', //networkidle2
      });
  
+     await page.addScriptTag({
+         path: "/src/vendor/moment.js-2.29.3/moment.js"
+     });
+     await page.addScriptTag({
+        path: "/src/vendor/chart.js-3.7.1/dist/chart.min.js"
+    });
+    await page.addScriptTag({
+        path: "/src/vendor/chartjs-adapter-date-fns.bundle.min.js"
+    });
+
      // Pass requestBody to area_chart_template.html and call renderChart() function of area_chart_template.html
      await page.evaluate((requestBody) => {
          window.renderChart(requestBody)
