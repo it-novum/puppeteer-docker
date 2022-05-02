@@ -22,3 +22,9 @@ docker run --rm -it --init -p 8084:8084 -v /opt/openitc/frontend/webroot:/opt/op
 
 https://stackoverflow.com/questions/47587352/opening-local-html-file-using-puppeteer
 
+
+
+
+/opt/openitc/frontend/
+
+docker run --rm -it --init -p 7084:8084 -v /opt/openitc/frontend/:/opt/openitc/frontend/:ro  openitcockpit/puppeteer /bin/bash
