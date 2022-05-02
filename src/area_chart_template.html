@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Area Chart</title>
+    <script>var requestBody = {}; </script>
+
+    <!-- Static dependencies so we do not get any issues in the future -->
+    <script src="./vendor/chart.js-3.7.1/dist/chart.min.js"></script>
+    <script src="./vendor/chartjs-adapter-date-fns.bundle.min.js"""></script>
+    <script src="./vendor/moment.js-2.29.3/moment.js"></script>
+</head>
+<body>
+<div id="chart">
+    <canvas id="canvas"></canvas>
+</div>
+
+<script>
+    var getColor = function(index){
+        var bgColors = [
+            'rgba(54, 162, 235, 0.2)',
+            'rgba(255, 99, 132, 0.2)',
+            'rgba(255, 206, 86, 0.2)',
+            'rgba(75, 192, 192, 0.2)',
+            'rgba(153, 102, 255, 0.2)',
+            'rgba(255, 159, 64, 0.2)'
+        ];
+
+        var borderColors = [
+            'rgba(54, 162, 235, 1)',
+            'rgba(255,99,132,1)',
+            'rgba(255, 206, 86, 1)',
+            'rgba(75, 192, 192, 1)',
+            'rgba(153, 102, 255, 1)',
+            'rgba(255, 159, 64, 1)'
+        ];
+
+        if(index > (bgColors.length - 1)){
+            return {
+                background: 'rgba(0, 0, 0, 0.2)',
+                border: 'rgba(0, 0, 0, 1)'
+            };
+        }
+
+        return {
+            background: bgColors[index],
+            border: borderColors[index]
+        };
+    };
+
+    window.renderChart = function(requestBody){
+        var labels = Object.keys(requestBody.data[0].data);
+
+        var datasets = [];
+
+        var useTwoYAxes = false;
+        var yAxes = [{}];
+        ds = requestBody.data[0].datasource;
+        if(ds.min !== null && ds.max !== null){
+            var stepSize = null;
+            var min = parseInt(ds.min, 10);
+            var max = parseInt(ds.max, 10);
+            if(min >= 0 && max <= 10){
+                //Fix larger steps for EVC
+                stepSize = 1;
+            }
+
+            yAxes = [{
+                ticks: {
+                    beginAtZero: min === 0,
+                    min: min,
+                    max: max,
+                    stepSize: stepSize
+                }
+            }];
+        }
+
+        if(requestBody.data.length === 2){
+            useTwoYAxes = true;
+            var ds;
+
+            var y1 = {
+                //id: 'A',
+                type: 'linear',
+                position: 'left',
+                scaleLabel: {
+                    display: true,
+                    labelString: requestBody.data[0].datasource.label
+                }
+            };
+
+            ds = requestBody.data[0].datasource;
+            if(ds.min !== null && ds.max !== null){
+                y1.ticks = {
+                    beginAtZero: parseInt(ds.min, 10) === 0,
+                    min: parseInt(ds.min, 10),
+                    max: parseInt(ds.max, 10)
+                };
+            }
+
+            var y2 = {
+                //id: 'B',
+                type: 'linear',
+                position: 'right',
+                scaleLabel: {
+                    display: true,
+                    labelString: requestBody.data[1].datasource.label
+                },
+                gridLines: {
+                    display: false
+                }
+            };
+
+            ds = requestBody.data[1].datasource;
+            if(ds.min !== null && ds.max !== null){
+                y2.ticks = {
+                    beginAtZero: parseInt(ds.min, 10) === 0,
+                    min: parseInt(ds.min, 10),
+                    max: parseInt(ds.max, 10)
+                };
+            }
+
+            yAxes = [y1, y2];
+        }
+
+        for(var i in requestBody.data){
+            var color = getColor(i);
+            var label = requestBody.data[i].datasource.label;
+            if(requestBody.data[i].datasource.unit != '' && requestBody.data[i].datasource.unit !== null){
+                label = requestBody.data[i].datasource.label + ' in ' + requestBody.data[i].datasource.unit;
+            }
+
+            if(useTwoYAxes === true){
+                datasets.push({
+                    label: label,
+                    borderColor: color.border,
+                    backgroundColor: color.background,
+                    borderWidth: 1,
+                    fill: true,
+                    data: Object.values(requestBody.data[i].data),
+                    yAxisID: (i == 0) ? 'yAxisA' : 'yAxisB',
+                    pointRadius: 0
+                });
+            }else{
+                datasets.push({
+                    label: label,
+                    borderColor: color.border,
+                    backgroundColor: color.background,
+                    borderWidth: 1,
+                    fill: true,
+                    data: Object.values(requestBody.data[i].data),
+                    pointRadius: 0
+                });
+            }
+        }
+
+        //console.log(yAxes);
+        var displayTitle = requestBody.settings.title != '';
+        var chartJsOptions = {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: datasets
+            },
+            options: {
+                scales: {
+                    x: {
+                        type: 'timeseries',
+                        ticks: {
+                            fontSize: 10,
+                            min: moment((requestBody.settings.graph_start)),
+                            max: moment((requestBody.settings.graph_end))
+                        },
+                        time: {
+                            displayFormats: {
+                                'millisecond': 'SSSS',
+                                'second': 'HH:mm',
+                                'minute': 'HH:mm',
+                                'hour': 'MMM D, HH:mm',
+                                'day': 'MMM DD',
+                                'week': 'MMM DD',
+                                'month': 'MMM DD',
+                                'quarter': 'MMM DD',
+                                'year': 'MMM DD'
+                            }
+                        }
+                    }
+                },
+                title: {
+                    display: displayTitle,
+                    text: requestBody.settings.title
+                },
+                animation: {
+                    duration: 0
+                }
+            }
+        };
+
+        // Add Y-Axis to chartJsOptions object (new syntax in ChartJS 3)
+        // For now we only have 2 Y-Axis in one chart
+        var axisIds = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+        for(var i in yAxes){
+            y = 'yAxis'+axisIds[i]; // Example: yAxisA, yAxisB
+            // https://www.chartjs.org/docs/latest/axes/
+            chartJsOptions.options.scales[y] = yAxes[i];
+        }
+
+
+        //console.log(util.inspect(chartJsOptions,  false, null, true ));
+        //console.log(util.inspect(chartJsOptions, false, null, true /* enable colors */));
+        //console.log("\n");
+
+        //console.log(JSON.stringify(chartJsOptions));
+
+        var ctx = document.getElementById("canvas").getContext("2d");
+        window.myLine = new Chart(ctx, chartJsOptions);
+    };
+
+    window.onload = function(){
+        //Test data for testing in local browser
+
+        // Comment the return statement for testing in local browser
+        return;
+
+        /*
+        var requestBody = {
+            data: [
+                {
+                    datasource: 'foo',
+                    data: [
+                        (Math.random() > 0.5 ? 1.0 : -1.0) * Math.round(Math.random() * 100),
+                        (Math.random() > 0.5 ? 1.0 : -1.0) * Math.round(Math.random() * 100),
+                        (Math.random() > 0.5 ? 1.0 : -1.0) * Math.round(Math.random() * 100),
+                        (Math.random() > 0.5 ? 1.0 : -1.0) * Math.round(Math.random() * 100),
+                    ]
+                }
+            ],
+            settings: {}
+        };*/
+
+        // Real world example data
+        var requestBody = {
+            data: [
+                {
+                datasource: {
+                    ds: 'rta',
+                    name: 'rta',
+                    label: 'rta',
+                    unit: 'µs',
+                    act: '0.035000',
+                    warn: 100000,
+                    crit: 500000,
+                    min: 0,
+                    max: null
+                },
+                data: {
+                    '2022-05-02T09:02:00+02:00': 34,
+                    '2022-05-02T09:03:00+02:00': 43,
+                    '2022-05-02T09:04:00+02:00': 35,
+                    '2022-05-02T09:05:00+02:00': 63,
+                    '2022-05-02T09:06:00+02:00': 35,
+                    '2022-05-02T09:07:00+02:00': 29,
+                    '2022-05-02T09:08:00+02:00': 31,
+                    '2022-05-02T09:09:00+02:00': 26,
+                    '2022-05-02T09:10:00+02:00': 25,
+                    '2022-05-02T09:11:00+02:00': 50,
+                    '2022-05-02T09:12:00+02:00': 39,
+                    '2022-05-02T09:13:00+02:00': 30,
+                    '2022-05-02T09:14:00+02:00': 30,
+                    '2022-05-02T09:15:00+02:00': 31,
+                    '2022-05-02T09:16:00+02:00': 41,
+                    '2022-05-02T09:17:00+02:00': 35,
+                    '2022-05-02T09:18:00+02:00': 33,
+                    '2022-05-02T09:19:00+02:00': 75,
+                    '2022-05-02T09:20:00+02:00': 148,
+                    '2022-05-02T09:21:00+02:00': 52,
+                    '2022-05-02T09:22:00+02:00': 46,
+                    '2022-05-02T09:23:00+02:00': 66,
+                    '2022-05-02T09:24:00+02:00': 49,
+                    '2022-05-02T09:25:00+02:00': 45,
+                    '2022-05-02T09:26:00+02:00': 88,
+                    '2022-05-02T09:27:00+02:00': 52,
+                    '2022-05-02T09:28:00+02:00': 47,
+                    '2022-05-02T09:29:00+02:00': 25,
+                    '2022-05-02T09:30:00+02:00': 27,
+                    '2022-05-02T09:31:00+02:00': 67,
+                    '2022-05-02T09:32:00+02:00': 29,
+                    '2022-05-02T09:33:00+02:00': 25,
+                    '2022-05-02T09:34:00+02:00': 31,
+                    '2022-05-02T09:35:00+02:00': 38,
+                    '2022-05-02T09:36:00+02:00': 21,
+                    '2022-05-02T09:37:00+02:00': 29,
+                    '2022-05-02T09:38:00+02:00': 26,
+                    '2022-05-02T09:39:00+02:00': 30,
+                    '2022-05-02T09:40:00+02:00': 27,
+                    '2022-05-02T09:41:00+02:00': 59,
+                    '2022-05-02T09:42:00+02:00': 50,
+                    '2022-05-02T09:43:00+02:00': 47,
+                    '2022-05-02T09:44:00+02:00': 49,
+                    '2022-05-02T09:45:00+02:00': 26,
+                    '2022-05-02T09:46:00+02:00': 33,
+                    '2022-05-02T09:47:00+02:00': 25,
+                    '2022-05-02T09:48:00+02:00': 25,
+                    '2022-05-02T09:49:00+02:00': 71,
+                    '2022-05-02T09:50:00+02:00': 25,
+                    '2022-05-02T09:51:00+02:00': 26,
+                    '2022-05-02T09:52:00+02:00': 22,
+                    '2022-05-02T09:53:00+02:00': 21,
+                    '2022-05-02T09:54:00+02:00': 37,
+                    '2022-05-02T09:55:00+02:00': 40,
+                    '2022-05-02T09:56:00+02:00': 30,
+                    '2022-05-02T09:57:00+02:00': 43
+                }
+                },
+                {
+                datasource: {
+                    ds: 'pl',
+                    name: 'pl',
+                    label: 'pl',
+                    unit: '%',
+                    act: '0',
+                    warn: '20',
+                    crit: '60',
+                    min: '0',
+                    max: null
+                },
+                data: {
+                    '2022-05-02T09:02:00+02:00': 0,
+                    '2022-05-02T09:03:00+02:00': 0,
+                    '2022-05-02T09:04:00+02:00': 0,
+                    '2022-05-02T09:05:00+02:00': 0,
+                    '2022-05-02T09:06:00+02:00': 0,
+                    '2022-05-02T09:07:00+02:00': 0,
+                    '2022-05-02T09:08:00+02:00': 0,
+                    '2022-05-02T09:09:00+02:00': 0,
+                    '2022-05-02T09:10:00+02:00': 0,
+                    '2022-05-02T09:11:00+02:00': 0,
+                    '2022-05-02T09:12:00+02:00': 0,
+                    '2022-05-02T09:13:00+02:00': 0,
+                    '2022-05-02T09:14:00+02:00': 0,
+                    '2022-05-02T09:15:00+02:00': 0,
+                    '2022-05-02T09:16:00+02:00': 0,
+                    '2022-05-02T09:17:00+02:00': 0,
+                    '2022-05-02T09:18:00+02:00': 0,
+                    '2022-05-02T09:19:00+02:00': 0,
+                    '2022-05-02T09:20:00+02:00': 0,
+                    '2022-05-02T09:21:00+02:00': 0,
+                    '2022-05-02T09:22:00+02:00': 0,
+                    '2022-05-02T09:23:00+02:00': 0,
+                    '2022-05-02T09:24:00+02:00': 0,
+                    '2022-05-02T09:25:00+02:00': 0,
+                    '2022-05-02T09:26:00+02:00': 0,
+                    '2022-05-02T09:27:00+02:00': 0,
+                    '2022-05-02T09:28:00+02:00': 0,
+                    '2022-05-02T09:29:00+02:00': 0,
+                    '2022-05-02T09:30:00+02:00': 0,
+                    '2022-05-02T09:31:00+02:00': 0,
+                    '2022-05-02T09:32:00+02:00': 0,
+                    '2022-05-02T09:33:00+02:00': 0,
+                    '2022-05-02T09:34:00+02:00': 0,
+                    '2022-05-02T09:35:00+02:00': 0,
+                    '2022-05-02T09:36:00+02:00': 0,
+                    '2022-05-02T09:37:00+02:00': 0,
+                    '2022-05-02T09:38:00+02:00': 0,
+                    '2022-05-02T09:39:00+02:00': 0,
+                    '2022-05-02T09:40:00+02:00': 0,
+                    '2022-05-02T09:41:00+02:00': 0,
+                    '2022-05-02T09:42:00+02:00': 0,
+                    '2022-05-02T09:43:00+02:00': 0,
+                    '2022-05-02T09:44:00+02:00': 0,
+                    '2022-05-02T09:45:00+02:00': 0,
+                    '2022-05-02T09:46:00+02:00': 0,
+                    '2022-05-02T09:47:00+02:00': 0,
+                    '2022-05-02T09:48:00+02:00': 0,
+                    '2022-05-02T09:49:00+02:00': 0,
+                    '2022-05-02T09:50:00+02:00': 0,
+                    '2022-05-02T09:51:00+02:00': 0,
+                    '2022-05-02T09:52:00+02:00': 0,
+                    '2022-05-02T09:53:00+02:00': 0,
+                    '2022-05-02T09:54:00+02:00': 0,
+                    '2022-05-02T09:55:00+02:00': 0,
+                    '2022-05-02T09:56:00+02:00': 0,
+                    '2022-05-02T09:57:00+02:00': 0
+                }
+                }
+            ],
+            settings: {
+                width: 560,
+                height: 180,
+                title: 'default host - ping',
+                graph_start: '2022-05-02T05:57:58+02:00',
+                graph_end: '2022-05-02T09:57:59+02:00'
+            }
+        };
+
+        window.renderChart(requestBody);
+    };
+
+</script>
+
+</body>
+</html>

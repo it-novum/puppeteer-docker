@@ -1,0 +1,32 @@
+FROM node:16-alpine
+
+# Install puppeteer dependencies (at least to render a PDF file)
+# apt-get install libgtk2.0-0 libnss3 libatk-bridge2.0-0 libdrm2 libxkbcommon0 libgbm1 
+RUN apk --no-cache add \
+    gtk+2.0 \
+    nss \
+    at-spi2-atk-dev \
+    libdrm \
+    libxkbcommon \
+    mesa-gbm \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont
+
+# Just for development - not required in any way
+RUN apk --no-cache add vim bash
+
+WORKDIR /app
+#COPY ./ /app
+
+RUN npm i puppeteer
+
+# Add user so we don't need --no-sandbox.
+RUN addgroup -S pptruser && adduser -S -G pptruser pptruser \
+    && mkdir -p /home/pptruser/Downloads /app \
+    && chown -R pptruser:pptruser /home/pptruser \
+    && chown -R pptruser:pptruser /app
+
+# Run everything after as non-privileged user.
+USER pptruser
