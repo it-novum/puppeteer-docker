@@ -1,0 +1,23 @@
+[Unit]
+Description=Nodejs Backend for openITCOCKPIT
+After=docker.service
+Requires=docker.service
+Requisite=docker.service
+
+[Service]
+Restart=always
+RestartSec=30
+Type=simple
+StandardOutput=null
+StandardError=null
+
+ExecStart=/usr/bin/docker run --rm \
+--init \
+-p 127.0.0.1:7084:8084 \
+-v /opt/openitc/frontend/:/opt/openitc/frontend/:ro \
+--name=openitcockpit-node \
+openitcockpit/puppeteer
+[Install]
+WantedBy=docker.service
+
+
