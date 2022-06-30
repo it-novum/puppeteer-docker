@@ -165,10 +165,10 @@
                 scales: {
                     x: {
                         type: 'time',
+                        min: requestBody.settings.graph_start,
+                        max: requestBody.settings.graph_end,
                         ticks: {
                             fontSize: 10,
-                            min: moment((requestBody.settings.graph_start)),
-                            max: moment((requestBody.settings.graph_end))
                         },
                         time: {
                             // RangeError: Use `dd` instead of `DD` (in `MMM DD`) for formatting days of the month to the input `1646352000000`; see: https://git.io/fxCyr
@@ -205,6 +205,7 @@
             chartJsOptions.options.scales[y] = yAxes[i];
         }
 
+        //console.log(chartJsOptions);
 
         //console.log(util.inspect(chartJsOptions,  false, null, true ));
         //console.log(util.inspect(chartJsOptions, false, null, true /* enable colors */));

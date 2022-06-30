@@ -28,3 +28,6 @@ https://stackoverflow.com/questions/47587352/opening-local-html-file-using-puppe
 /opt/openitc/frontend/
 
 docker run --rm -it --init -p 7084:8084 -v /opt/openitc/frontend/:/opt/openitc/frontend/:ro  openitcockpit/puppeteer /bin/bash
+
+## Debugging
+To debug this, open the `area_chart_template.html` file in your web browser. You can use console.log and dev tools as you are used to it.
