@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Area Chart</title>
     <!-- Static dependencies so we do not get any issues in the future -->
-    <script src="./vendor/moment.js-2.29.3/moment.js"></script>
+    <script src="./vendor/luxon-3.4.3/luxon.min.js"></script>
     <script src="./vendor/chart.js-3.7.1/dist/chart.min.js"></script>
-    <script src="./vendor/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="./vendor/chartjs-adapter-luxon-1.3.1/chartjs-adapter-luxon.umd.min.js"></script>
 </head>
 <body>
 <div id="chart">
@@ -15,6 +15,7 @@
 </div>
 
 <script>
+
     var getColor = function(index){
         var bgColors = [
             'rgba(54, 162, 235, 0.2)',
@@ -183,7 +184,12 @@
                                 'quarter': 'MMM dd',
                                 'year': 'MMM dd'
                             }
-                        }
+                        },
+                        adapters: {
+                            date: {
+                                zone: requestBody.settings.timezone
+                            }
+                        },
                     }
                 },
                 title: {
