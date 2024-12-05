@@ -10,14 +10,14 @@ RestartSec=30
 Type=simple
 StandardOutput=null
 StandardError=null
-
+ExecStartPre=-/usr/bin/docker exec openitcockpit-node stop
+ExecStartPre=-/usr/bin/docker rm openitcockpit-node
 ExecStart=/usr/bin/docker run --rm \
 --init \
 -p 127.0.0.1:7084:8084 \
 -v /opt/openitc/frontend/:/opt/openitc/frontend/:ro \
 --name=openitcockpit-node \
 openitcockpit/puppeteer
+
 [Install]
 WantedBy=docker.service
-
-
