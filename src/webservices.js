@@ -1,5 +1,6 @@
 /**
- * Copyright (C) <2022>  <it-novum GmbH>
+ * Copyright (C) 2015-2025   <it-novum GmbH>
+ * Copyright (C) 2025-today  <AVENDIS GmbH>
  * Licensed under the MIT License
  *
  *
@@ -9,7 +10,7 @@
  * - [POST] /pdf
  *      Accept: application/json
  *      Return: application/pdf
- * - [POST] /area_chart
+ * - [POST] /area_chart (deprecated)
  *      Accept: application/json
  *      Return: application/png
  */
@@ -29,11 +30,24 @@
  app.use(bodyParser.urlencoded({limit: '500mb', extended: true}));
  
  app.post('/pdf', async function(request, response){
+    let browser;
      try{
          //console.log(request.body);     // json data
+
+        if (!request.body || typeof request.body !== 'object') {
+            response.status(400).json({error: 'Request body must be a JSON object'});
+            return response;
+        }
  
          const html = request.body.html;
-         const settings = request.body.settings;
+        const settings = request.body.settings && typeof request.body.settings === 'object'
+            ? request.body.settings
+            : {};
+
+        if (typeof html !== 'string' || html.length === 0) {
+            response.status(400).json({error: 'Missing or invalid "html" payload'});
+            return response;
+        }
  
          // .html file suffix is important. Otherwise puppeteer will render the file as plaintext
          var tmpFile = temp.openSync({suffix: '.html'});
@@ -49,7 +63,7 @@
          // Create new Chrome Browser
          // --no-sandbox is bad and unsecure, but this is running inside of a Docker Container and only
          // rendering our own trusted HTML so we don't really need to care about security anyway
-         const browser = await puppeteer.launch({
+        browser = await puppeteer.launch({
              args: [
                  '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage',
                  //'--disable-web-security', '--font-render-hinting=none', '--headless', '--force-color-profile=srgb'
@@ -77,22 +91,33 @@
              settings
          );
  
-         await browser.close();
- 
          response.writeHead(200, {'Content-Type': 'application/pdf'});
          response.end(pdfBuffer, 'binary');
      }catch(e){
          console.error(e);
+        if (!response.headersSent) {
+            response.status(500).json({error: 'Failed to render PDF'});
+        }
+    }finally{
+        if (browser) {
+            await browser.close();
+        }
+        temp.cleanup();
      }
- 
-     temp.cleanup();
+
      return response;
  });
  
  
  app.post('/area_chart', async function(request, response){
+    let browser;
      try{
          //console.log(request.body);     // json data
+        if (!request.body || typeof request.body !== 'object') {
+            response.status(400).json({error: 'Request body must be a JSON object'});
+            return response;
+        }
+
          var requestBody = request.body;
          //console.log(util.inspect(requestBody, false, null, true /* enable colors */))
  
@@ -100,7 +125,7 @@
          // Create new Chrome Browser
          // --no-sandbox is bad and unsecure, but this is running inside of a Docker Container and only
          // rendering our own trusted HTML so we don't really need to care about security anyway
-         const browser = await puppeteer.launch({
+        browser = await puppeteer.launch({
              args: [
                  '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage',
                  //'--disable-web-security', '--font-render-hinting=none', '--headless', '--force-color-profile=srgb'
@@ -123,13 +148,19 @@
          const chartDiv = await page.$('#chart')
          const pngBuffer = await chartDiv.screenshot();
  
-         await browser.close();
- 
          response.writeHead(200, {'Content-Type': 'image/png'});
          response.end(pngBuffer, 'binary');
      }catch(e){
          console.error(e);
+        if (!response.headersSent) {
+            response.status(500).json({error: 'Failed to render area chart'});
+        }
+    }finally{
+        if (browser) {
+            await browser.close();
+        }
      }
+
      return response;
  });
  
