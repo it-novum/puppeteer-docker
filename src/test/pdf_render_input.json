@@ -1,0 +1,7 @@
+{
+  "html": "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>PDF Integration Test</title></head><body><h1>PDF Test</h1><p>If you can read this, PDF rendering works.</p></body></html>",
+  "settings": {
+    "format": "A4",
+    "printBackground": true
+  }
+}
